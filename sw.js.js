@@ -1,4 +1,4 @@
-const CACHE = 'opnodo-v2';
+const CACHE = 'opnodo-v3';
 const ASSETS = [
   './operacion-nodo.html',
   './manifest.json',
