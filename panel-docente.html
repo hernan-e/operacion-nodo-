@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel del Docente — Operación Nodo</title>
+<style>
+  :root{--bg:#0d1210;--panel:#161f18;--panel2:#1e2b21;--linea:#33473a;
+    --verde:#7fb069;--verde2:#a3d18a;--amarillo:#e0c56e;--rojo:#d9645a;
+    --texto:#e8efe6;--gris:#9fb3a2;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--texto);font-family:"Segoe UI",Roboto,Arial,sans-serif;font-size:16px;}
+  header{padding:16px 24px;background:#0a0f0c;border-bottom:2px solid var(--linea);}
+  header h1{margin:0;font-size:22px;color:var(--verde2);letter-spacing:1px;}
+  main{max-width:1200px;margin:0 auto;padding:24px 16px 60px;}
+  .card{background:var(--panel);border:1px solid var(--linea);border-radius:14px;padding:20px;margin-bottom:20px;}
+  h2{color:var(--verde2);font-size:18px;margin:0 0 14px;}
+  .btn{background:var(--verde);color:#0d1210;border:none;padding:11px 22px;border-radius:10px;
+    font-size:15px;font-weight:700;cursor:pointer;letter-spacing:1px;margin:4px 4px 4px 0;}
+  .btn.sec{background:transparent;color:var(--verde2);border:1px solid var(--linea);}
+  .btn.peligro{background:var(--rojo);color:#fff;}
+  .tabla{width:100%;border-collapse:collapse;font-size:14px;}
+  .tabla th,.tabla td{padding:9px;border-bottom:1px solid var(--linea);text-align:left;}
+  .tabla th{color:var(--amarillo);font-size:12px;text-transform:uppercase;}
+  .tabla tr:hover{background:var(--panel2);}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+  .stat{background:var(--panel2);border:1px solid var(--linea);border-radius:10px;padding:16px;text-align:center;}
+  .stat .num{font-size:28px;font-weight:800;color:var(--amarillo);}
+  .stat .lbl{font-size:12px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;}
+  .drop{border:2px dashed var(--linea);border-radius:12px;padding:30px;text-align:center;color:var(--gris);cursor:pointer;}
+  .drop:hover{border-color:var(--verde);color:var(--verde2);}
+  input[type=file]{display:none;}
+  .filtros{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+  select{padding:10px;border-radius:8px;border:1px solid var(--linea);background:#0f1712;color:var(--texto);}
+</style>
+</head>
+<body>
+<header><h1>📊 Panel del Docente — Operación Nodo</h1></header>
+<main>
+
+<section class="card">
+  <h2>📥 Importar resultados de los equipos</h2>
+  <p style="color:var(--gris);font-size:14px">Pide a cada equipo que use el botón <b>⬇️ EXPORTAR JSON</b> al final del juego. Arrastra aquí todos los JSON (puedes seleccionar varios a la vez).</p>
+  <div class="drop" id="drop" onclick="document.getElementById('file').click()">
+    📁 Arrastra los archivos .json aquí o haz clic para seleccionarlos
+  </div>
+  <input type="file" id="file" accept=".json" multiple>
+</section>
+
+<section class="card">
+  <h2>📈 Estadísticas generales</h2>
+  <div class="stats" id="stats">
+    <div class="stat"><div class="num" id="st-total">0</div><div class="lbl">Partidas</div></div>
+    <div class="stat"><div class="num" id="st-equipos">0</div><div class="lbl">Equipos</div></div>
+    <div class="stat"><div class="num" id="st-prom">0</div><div class="lbl">Promedio</div></div>
+    <div class="stat"><div class="num" id="st-max">0</div><div class="lbl">Máximo</div></div>
+    <div class="stat"><div class="num" id="st-min">0</div><div class="lbl">Mínimo</div></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>📋 Resultados</h2>
+  <div class="filtros">
+    <select id="filtro-esc"><option value="">Todos los escenarios</option></select>
+    <button class="btn sec" onclick="exportarCSV()">⬇️ Exportar CSV</button>
+    <button class="btn peligro" onclick="limpiar()">🗑️ Limpiar todo</button>
+  </div>
+  <table class="tabla">
+    <thead><tr>
+      <th>#</th><th>Equipo</th><th>Escenario</th><th>Radar</th><th>Intel</th>
+      <th>Decisión</th><th>Sprint</th><th>Total</th><th>%</th><th>Fecha</th>
+    </tr></thead>
+    <tbody id="tbody"><tr><td colspan="10" style="color:var(--gris)">Sin resultados cargados</td></tr></tbody>
+  </table>
+</section>
+
+</main>
+
+<script>
+let todos = [];
+const $ = id => document.getElementById(id);
+
+$('file').onchange = e => procesar(e.target.files);
+$('drop').ondragover = e => { e.preventDefault(); };
+$('drop').ondrop = e => {
+  e.preventDefault();
+  procesar(e.dataTransfer.files);
+};
+
+function procesar(files){
+  const lecturas = [...files].map(f => new Promise(res => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const data = JSON.parse(reader.result);
+        res(Array.isArray(data) ? data : [data]);
+      }catch(e){ res([]); }
+    };
+    reader.readAsText(f);
+  }));
+  Promise.all(lecturas).then(lotes => {
+    lotes.forEach(l => l.forEach(r => {
+      if(r.equipo && typeof r.total === 'number'){
+        // Deduplicar por equipo+fecha
+        if(!todos.some(x => x.equipo === r.equipo && x.fecha === r.fecha)){
+          todos.push(r);
+        }
+      }
+    }));
+    render();
+  });
+}
+
+function render(){
+  // Stats
+  const total = todos.length;
+  const equipos = new Set(todos.map(r=>r.equipo)).size;
+  const vals = todos.map(r=>r.total);
+  const prom = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1) : 0;
+  const max = vals.length ? Math.max(...vals) : 0;
+  const min = vals.length ? Math.min(...vals) : 0;
+  $('st-total').textContent = total;
+  $('st-equipos').textContent = equipos;
+  $('st-prom').textContent = prom;
+  $('st-max').textContent = max;
+  $('st-min').textContent = min;
+
+  // Filtro
+  const escs = [...new Set(todos.map(r=>r.escenarioNombre))];
+  const filtro = $('filtro-esc').value;
+  $('filtro-esc').innerHTML = '<option value="">Todos los escenarios</option>' +
+    escs.map(e => `<option value="${e}" ${e===filtro?'selected':''}>${e}</option>`).join('');
+
+  // Tabla
+  const filtrados = filtro ? todos.filter(r=>r.escenarioNombre === filtro) : todos;
+  const ordenados = [...filtrados].sort((a,b)=>b.total - a.total);
+  $('tbody').innerHTML = ordenados.map((r,i)=>`
+    <tr>
+      <td>${i+1}</td><td><b>${r.equipo}</b></td><td>${r.escenarioNombre}</td>
+      <td>${r.puntos.radar}/8</td><td>${r.puntos.intel}/10</td>
+      <td>${r.puntos.decision}/15</td><td>${r.puntos.sprint}/10</td>
+      <td><b style="color:var(--amarillo)">${r.total}/43</b></td>
+      <td>${r.porcentaje}%</td>
+      <td style="font-size:12px;color:var(--gris)">${new Date(r.fecha).toLocaleString()}</td>
+    </tr>`).join('') || '<tr><td colspan="10" style="color:var(--gris)">Sin resultados</td></tr>';
+}
+
+$('filtro-esc').onchange = render;
+
+function exportarCSV(){
+  if(!todos.length){ alert('No hay resultados.'); return; }
+  const cab = ['Equipo','Escenario','Radar','Inteligencia','Decision','Sprint','Total','%','Rango','Fecha'];
+  const filas = todos.map(r => [
+    r.equipo, r.escenarioNombre, r.puntos.radar, r.puntos.intel,
+    r.puntos.decision, r.puntos.sprint, r.total, r.porcentaje + '%', r.rango,
+    new Date(r.fecha).toLocaleString()
+  ]);
+  const csv = [cab, ...filas].map(f=>f.join(';')).join('\n');
+  const blob = new Blob(["\ufeff" + csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'operacion-nodo-consolidado.csv';
+  a.click();
+}
+
+function limpiar(){
+  if(!confirm('¿Borrar todos los resultados cargados?')) return;
+  todos = [];
+  render();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0d1210">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<title>Operación Nodo — Geografía Militar</title>
+<style>
+  :root{--bg:#0d1210;--panel:#161f18;--panel2:#1e2b21;--linea:#33473a;
+    --verde:#7fb069;--verde2:#a3d18a;--amarillo:#e0c56e;--rojo:#d9645a;
+    --texto:#e8efe6;--gris:#9fb3a2;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--texto);font-family:"Segoe UI",Roboto,Arial,sans-serif;font-size:17px;}
+  #hud{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;
+    background:#0a0f0c;border-bottom:2px solid var(--linea);position:sticky;top:0;z-index:10;flex-wrap:wrap;gap:8px;}
+  #hud .logo{font-weight:700;letter-spacing:1px;color:var(--verde2);}
+  #hud .hud-r{display:flex;gap:16px;align-items:center;font-size:15px;color:var(--gris);}
+  .pts{background:var(--panel2);border:1px solid var(--linea);padding:4px 12px;border-radius:20px;color:var(--amarillo);font-weight:700;}
+  main{max-width:1000px;margin:0 auto;padding:24px 16px 60px;}
+  .card{background:var(--panel);border:1px solid var(--linea);border-radius:14px;padding:24px;box-shadow:0 6px 24px rgba(0,0,0,.35);}
+  .centro{text-align:center;}
+  h1{font-size:32px;margin:6px 0;letter-spacing:2px;}
+  h2{font-size:21px;margin:6px 0 16px;color:var(--verde2);}
+  .sub{color:var(--gris);margin-top:0;}
+  .barra{display:flex;justify-content:space-between;font-size:13px;letter-spacing:1px;color:var(--amarillo);
+    border-bottom:1px solid var(--linea);padding-bottom:10px;margin-bottom:18px;text-transform:uppercase;}
+  .btn{background:var(--verde);color:#0d1210;border:none;padding:14px 28px;border-radius:10px;font-size:17px;
+    font-weight:700;cursor:pointer;letter-spacing:1px;margin-top:16px;transition:.15s;}
+  .btn:hover{background:var(--verde2);transform:translateY(-1px);}
+  .btn.sec{background:transparent;color:var(--verde2);border:1px solid var(--linea);}
+  input,select,textarea{width:100%;padding:12px;margin-top:6px;border-radius:10px;border:1px solid var(--linea);
+    background:#0f1712;color:var(--texto);font-size:16px;font-family:inherit;}
+  textarea{resize:vertical;min-height:90px;}
+  label{display:block;text-align:left;margin-top:18px;color:var(--gris);font-size:14px;}
+  .ops{display:flex;flex-direction:column;gap:10px;margin-top:10px;}
+  .op{text-align:left;padding:14px 16px;border-radius:10px;cursor:pointer;background:var(--panel2);
+    color:var(--texto);border:1px solid var(--linea);font-size:16px;transition:.15s;}
+  .op:hover:not(:disabled){border-color:var(--verde);transform:translateX(3px);}
+  .op:disabled{cursor:default;opacity:.95;}
+  .op .letra{display:inline-block;width:26px;height:26px;line-height:26px;text-align:center;
+    background:#0f1712;border-radius:50%;margin-right:10px;font-weight:700;color:var(--amarillo);font-size:14px;}
+  .op.ok{background:#1d3320;border-color:var(--verde);}
+  .op.mal{background:#331d1d;border-color:var(--rojo);}
+  .fb{margin-top:18px;}
+  .bien{color:var(--verde2);font-weight:700;margin:0;}
+  .mal2{color:var(--rojo);font-weight:700;margin:0;}
+  .expl{color:var(--gris);margin:6px 0 0;font-size:15px;}
+  .mapa{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin:18px 0;}
+  .pp{background:var(--panel2);border:1px solid var(--linea);border-radius:12px;padding:14px;text-align:center;}
+  .pp .ic{font-size:30px;display:block;}
+  .pp .nm{font-weight:700;margin-top:4px;}
+  .pp .pb{font-size:13px;color:var(--gris);}
+  .pp.sel{border-color:var(--verde);background:#1d3320;box-shadow:0 0 0 2px var(--verde) inset;}
+  .pp.clic{cursor:pointer;}
+  .pp.clic:hover{border-color:var(--verde2);}
+  .dossier{background:#0f1712;border-left:3px solid var(--amarillo);padding:14px 18px;border-radius:8px;margin-bottom:10px;}
+  .dossier p{margin:6px 0;font-size:15px;}
+  .inst{color:var(--gris);font-size:15px;}
+  .fila{background:var(--panel2);border:1px solid var(--linea);border-radius:10px;padding:14px;margin-bottom:10px;}
+  .f-nombre{font-weight:700;margin-bottom:10px;}
+  .seg{display:flex;gap:8px;margin-bottom:8px;}
+  .seg-btn{flex:1;padding:8px;border-radius:8px;border:1px solid var(--linea);background:#0f1712;color:var(--texto);cursor:pointer;font-weight:700;}
+  .seg-btn.on{background:var(--verde);color:#0d1210;border-color:var(--verde);}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0;}
+  .chip{padding:10px 16px;border-radius:20px;border:1px solid var(--linea);background:var(--panel2);cursor:pointer;font-size:15px;}
+  .chip.on{background:var(--verde);color:#0d1210;border-color:var(--verde);font-weight:700;}
+  .tabla{width:100%;border-collapse:collapse;margin-top:14px;font-size:15px;}
+  .tabla th,.tabla td{padding:10px;border-bottom:1px solid var(--linea);text-align:left;}
+  .tabla th{color:var(--amarillo);font-size:13px;text-transform:uppercase;}
+  .grande{font-size:52px;font-weight:800;color:var(--amarillo);margin:8px 0;}
+  .fila-res{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--linea);}
+  .sel-scenario{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:18px 0;}
+  .sc-card{background:var(--panel2);border:2px solid var(--linea);border-radius:12px;padding:18px;cursor:pointer;text-align:left;transition:.15s;}
+  .sc-card:hover{border-color:var(--verde2);transform:translateY(-2px);}
+  .sc-card.on{border-color:var(--verde);background:#1d3320;box-shadow:0 0 0 2px var(--verde) inset;}
+  .sc-card h3{margin:0 0 6px;color:var(--verde2);font-size:18px;}
+  .sc-card p{margin:4px 0;color:var(--gris);font-size:14px;}
+  @media print{#hud,.no-print{display:none!important;}body{background:#fff;color:#000;}
+    .card{box-shadow:none;border:1px solid #999;background:#fff;}h2,.sub{color:#000;}}
+</style>
+</head>
+<body>
+
+<header id="hud">
+  <div class="logo">🎖️ OPERACIÓN NODO</div>
+  <div class="hud-r">
+    <span id="hud-equipo"></span>
+    <span class="pts" id="hud-puntos">0 pts</span>
+  </div>
+</header>
+
+<main id="screen"></main>
+
+<script>
+/* ============================================================
+   OPERACIÓN NODO v2.0 — Multiescenario + IndexedDB + PWA
+   ============================================================ */
+
+const app = document.getElementById('screen');
+const go = (html) => { app.innerHTML = html; window.scrollTo(0,0); };
+
+/* ---------- ESCENARIOS ---------- */
+const SCENARIOS = {
+  valle: {
+    nombre: 'Valle del Norte',
+    icono: '🏞️',
+    descripcion: 'Región de valles y ríos con un corredor comercial hacia el puerto.',
+    mision: 'Asegurar un corredor logístico de 72 horas entre la Base Norte y Puerto Esperanza.',
+    corredor: ['ciudadalta','sanmiguel','puertoesperanza'],
+    pps: [
+      {id:'ciudadalta',nombre:'Ciudad Alta',icon:'🏙️',pob:'90.000 hab.',corredor:true,
+        datos:{poblacion:'90.000 habitantes',vias:'Nudo de 4 rutas + aeródromo',
+          recursos:'Hospital, universidad, industria',terreno:'Colinas y río; casco urbano extenso',
+          politico:'Capital provincial, gobernación y medios'},
+        factores:{nodo:true,logistica:true,poblacion:true,terreno:true,politico:true}},
+      {id:'sanmiguel',nombre:'San Miguel',icon:'🏘️',pob:'12.000 hab.',corredor:true,
+        datos:{poblacion:'12.000 habitantes',vias:'Convergen 3 rutas y un puente sobre el río',
+          recursos:'Planta de agua, 2 talleres mecánicos, mercado regional',
+          terreno:'Casco urbano compacto, colinas al oeste',politico:'Sede municipal y radio local'},
+        factores:{nodo:true,logistica:true,poblacion:true,terreno:true,politico:true}},
+      {id:'puertoesperanza',nombre:'Puerto Esperanza',icon:'⚓',pob:'25.000 hab.',corredor:true,
+        datos:{poblacion:'25.000 habitantes',vias:'Puerto fluvial + ferrocarril + 2 rutas',
+          recursos:'Combustible, astillero, aduana',terreno:'Terreno abierto y plano',
+          politico:'Aduana y delegación de gobierno'},
+        factores:{nodo:true,logistica:true,poblacion:true,terreno:false,politico:true}},
+      {id:'santarosa',nombre:'Santa Rosa',icon:'🌾',pob:'6.000 hab.',corredor:false,
+        datos:{poblacion:'6.000 habitantes',vias:'Estación de ferrocarril secundaria y 1 ruta',
+          recursos:'Silos de grano y talleres de reparación',terreno:'Casco semi-compacto, terreno llano',
+          politico:'Sin autoridades relevantes'},
+        factores:{nodo:true,logistica:true,poblacion:true,terreno:false,politico:false}},
+      {id:'lagunaseca',nombre:'Laguna Seca',icon:'🌉',pob:'1.500 hab.',corredor:false,
+        datos:{poblacion:'1.500 habitantes',vias:'Único vado para cruzar el río',
+          recursos:'Pozo de agua',terreno:'Terreno pantanoso alrededor del vado',
+          politico:'Sin autoridades relevantes'},
+        factores:{nodo:true,logistica:false,poblacion:false,terreno:true,politico:false}},
+      {id:'valleverde',nombre:'Valle Verde',icon:'🌿',pob:'3.000 hab.',corredor:false,
+        datos:{poblacion:'3.000 habitantes',vias:'Un camino secundario de acceso',
+          recursos:'Producción agrícola y agua de riego',terreno:'Valle abierto, sin defensas naturales',
+          politico:'Sin autoridades relevantes'},
+        factores:{nodo:false,logistica:true,poblacion:true,terreno:false,politico:false}},
+      {id:'crucenorte',nombre:'Cruce Norte',icon:'🛤️',pob:'800 hab.',corredor:false,
+        datos:{poblacion:'800 habitantes',vias:'Convergen 2 carreteras y la línea férrea',
+          recursos:'Ninguno',terreno:'Llanura abierta',politico:'Sin autoridades relevantes'},
+        factores:{nodo:true,logistica:false,poblacion:false,terreno:false,politico:false}},
+      {id:'monteoscuro',nombre:'Monte Oscuro',icon:'🌲',pob:'400 hab.',corredor:false,
+        datos:{poblacion:'400 habitantes',vias:'Solo una trocha de tierra',
+          recursos:'Ninguno',terreno:'Bosque denso y altura',politico:'Sin autoridades relevantes'},
+        factores:{nodo:false,logistica:false,poblacion:false,terreno:true,politico:false}}
+    ],
+    radar: [
+      {t:'¿Cuál de estos es un NODO DE COMUNICACIONES en el Valle del Norte?',
+       o:['Cruce Norte: convergen 2 carreteras y ferrocarril','Monte Oscuro: solo una trocha',
+          'Valle Verde: un camino secundario','Laguna Seca: sin vías'],c:0,
+       e:'En Cruce Norte convergen varias rutas: quien lo controla, controla el movimiento.'},
+      {t:'Puerto Esperanza tiene puerto, ferrocarril y combustible. ¿Qué factor destaca?',
+       o:['Valor político','Logística y recursos','Terreno urbano','Ninguno'],c:1,
+       e:'El combustible, el puerto y el astillero son recursos logísticos.'},
+      {t:'Ciudad Alta tiene 90.000 hab., gobernación y medios. ¿Qué factor destaca más?',
+       o:['Valor político-estratégico','Solo población','Ninguno','Terreno pantanoso'],c:0,
+       e:'Albergar autoridades y medios le da valor político: controlarla otorga legitimidad.'},
+      {t:'¿Por qué el TERRENO URBANO es un factor militar?',
+       o:['Porque las calles son bonitas','Porque permite defensa, emboscadas y puntos críticos',
+          'Porque no se puede combatir','Porque solo sirve para turismo'],c:1,
+       e:'El casco urbano ofrece cobertura y puntos críticos que hay que dominar.'},
+      {t:'"Un centro poblado pequeño nunca tiene valor militar."',
+       o:['Verdadero','Falso'],c:1,
+       e:'Falso. Laguna Seca tiene 1.500 hab. pero controla el único vado del río.'},
+      {t:'¿Cuál es un PUNTO CRÍTICO?',
+       o:['El puente sobre el río en San Miguel','Una casa cualquiera','Un árbol','Una calle sin salida'],c:0,
+       e:'El puente es un paso obligado: si lo cortas, cortas el corredor.'},
+      {t:'¿Qué aporta la POBLACIÓN a una operación militar?',
+       o:['Solo problemas','Reclutamiento, mano de obra e información (HUMINT)','Nada','Solo turismo'],c:1,
+       e:'La población aporta gente, trabajo e información de fuentes humanas.'},
+      {t:'¿Qué centro poblado concentra los 5 factores en el Valle del Norte?',
+       o:['Monte Oscuro','Cruce Norte','Ciudad Alta','Valle Verde'],c:2,
+       e:'Ciudad Alta suma nodo, logística, población, terreno y política: objetivo prioritario.'}
+    ],
+    sprint: [
+      {t:'Los centros poblados solo importan por su cantidad de habitantes.',o:['Verdadero','Falso'],c:1,
+       e:'No. Un poblado pequeño puede controlar un paso y ser decisivo.'},
+      {t:'Un cruce de rutas convierte a un poblado en nodo de movimiento.',o:['Verdadero','Falso'],c:0,
+       e:'Correcto: por allí pasa todo.'},
+      {t:'¿Cuál NO es factor de valor militar?',o:['Nodo de comunicaciones','Logística y recursos','El color de las casas','Valor político'],c:2,
+       e:'El color de las casas no influye.'},
+      {t:'Planta de agua y talleres son ejemplos de…',o:['Recursos logísticos','Valor político','Terreno urbano','Ninguno'],c:0,
+       e:'Agua y talleres sostienen la fuerza.'},
+      {t:'Controlar la población facilita reclutamiento e inteligencia.',o:['Verdadero','Falso'],c:0,
+       e:'Sí: aporta gente e información.'},
+      {t:'Laguna Seca tiene el único vado. ¿Qué la hace clave?',
+       o:['Nodo/punto crítico','Valor político','Tamaño','Ninguno'],c:0,
+       e:'Un paso obligado es un punto crítico.'},
+      {t:'El valor político puede superar al tamaño de la población.',o:['Verdadero','Falso'],c:0,
+       e:'Sí: una sede de gobierno vale más que su número de habitantes.'},
+      {t:'En una operación logística, ¿qué se asegura primero?',
+       o:['Los nodos del corredor','Los monumentos','Zonas turísticas','Nada'],c:0,
+       e:'Se aseguran los nodos: sin ellos el corredor se corta.'},
+      {t:'Monte Oscuro: 400 hab., sin rutas, bosque denso. Su valor principal es…',
+       o:['Terreno defensivo','Logística','Valor político','Nodo de comunicaciones'],c:0,
+       e:'El bosque y la altura dan ventaja defensiva.'},
+      {t:'¿Para qué sirve conocer los centros poblados?',
+       o:['Para decidir qué controlar primero y con qué medios','Para turismo','Para nada','Solo para mapas'],c:0,
+       e:'Permite priorizar objetivos y asignar medios.'}
+    ]
+  },
+  costa: {
+    nombre: 'Costa del Este',
+    icono: '🌊',
+    descripcion: 'Litoral con puerto internacional y un delta estratégico.',
+    mision: 'Asegurar un corredor logístico de 72 horas entre la Base Costera y Puerto Nuevo.',
+    corredor: ['mar','puertonuevo','cruzadelta'],
+    pps: [
+      {id:'mar',nombre:'Metrópolis del Mar',icon:'🌆',pob:'120.000 hab.',corredor:true,
+        datos:{poblacion:'120.000 habitantes',vias:'Nudo de 5 rutas + aeropuerto + puerto',
+          recursos:'Hospital central, industria, astillero',terreno:'Casco urbano costero denso, acantilados',
+          politico:'Capital regional, gobernación, medios'},
+        factores:{nodo:true,logistica:true,poblacion:true,terreno:true,politico:true}},
+      {id:'puertonuevo',nombre:'Puerto Nuevo',icon:'🚢',pob:'35.000 hab.',corredor:true,
+        datos:{poblacion:'35.000 habitantes',vias:'Puerto internacional + ferrocarril + 2 rutas',
+          recursos:'Combustible, aduana, talleres portuarios',terreno:'Terreno llano y abierto',
+          politico:'Aduana y delegación de gobierno'},
+        factores:{nodo:true,logistica:true,poblacion:true,terreno:false,politico:true}},
+      {id:'cruzadelta',nombre:'Cruce Delta',icon:'⛵',pob:'2.000 hab.',corredor:true,
+        datos:{poblacion:'2.000 habitantes',vias:'Único paso terrestre entre el delta y el continente',
+          recursos:'Pozo de agua',terreno:'Zona pantanosa, puente y compuertas',
+          politico:'Sin autoridades relevantes'},
+        factores:{nodo:true,logistica:false,poblacion:false,terreno:true,politico:false}},
+      {id:'villapesca',nombre:'Villa Pesquera',icon:'🐟',pob:'5.000 hab.',corredor:false,
+        datos:{poblacion:'5.000 habitantes',vias:'Muelle y 1 carretera secundaria',
+          recursos:'Pescado, hielo, talleres navales',terreno:'Playa y acantilados bajos',
+          politico:'Sin autoridades relevantes'},
+        factores:{nodo:false,logistica:true,poblacion:true,terreno:false,politico:false}},
+      {id:'salinas',nombre:'Las Salinas',icon:'🧂',pob:'3.000 hab.',corredor:false,
+        datos:{poblacion:'3.000 habitantes',vias:'Un camino secundario',
+          recursos:'Salinas industriales, agua',terreno:'Llanura salina',
+          politico:'Sin autoridades relevantes'},
+        factores:{nodo:false,logistica:true,poblacion:true,terreno:false,politico:false}},
+      {id:'fuentevieja',nombre:'Fuente Vieja',icon:'💧',pob:'1.000 hab.',corredor:false,
+        datos:{poblacion:'1.000 habitantes',vias:'Trocha de acceso',
+          recursos:'Manantial principal de la región',terreno:'Quebrada estrecha',
+          politico:'Sin autoridades relevantes'},
+        factores:{nodo:false,logistica:true,poblacion:false,terreno:false,politico:false}},
+      {id:'montalto',nombre:'Monte Alto',icon:'🏔️',pob:'800 hab.',corredor:false,
+        datos:{poblacion:'800 habitantes',vias:'Solo una trocha de montaña',
+          recursos:'Ninguno',terreno:'Altura dominante con vista al puerto',
+          politico:'Sin autoridades relevantes'},
+        factores:{nodo:false,logistica:false,poblacion:false,terreno:true,politico:false}},
+      {id:'fuerteviejo',nombre:'Fuerte Viejo',icon:'🏰',pob:'500 hab.',corredor:false,
+        datos:{poblacion:'500 habitantes',vias:'Camino costero secundario',
+          recursos:'Ninguno',terreno:'Fortaleza histórica sobre acantilado',
+          politico:'Monumento nacional, símbolo de la región'},
+        factores:{nodo:false,logistica:false,poblacion:false,terreno:true,politico:true}}
+    ],
+    radar: [
+      {t:'¿Cuál es el NODO de comunicaciones principal de Costa del Este?',
+       o:['Metrópolis del Mar: 5 rutas, aeropuerto y puerto','Monte Alto: una trocha',
+          'Fuente Vieja: un manantial','Fuerte Viejo: un monumento'],c:0,
+       e:'Metrópolis concentra rutas, aeropuerto y puerto: el nodo mayor.'},
+      {t:'Puerto Nuevo tiene puerto internacional, ferrocarril y combustible. Factor clave:',
+       o:['Valor político','Logística y recursos','Solo terreno','Ninguno'],c:1,
+       e:'Combustible, puerto y talleres son logística.'},
+      {t:'Cruce Delta controla el único paso del delta. ¿Qué factor representa?',
+       o:['Nodo/punto crítico del terreno','Valor político','Tamaño de población','Ninguno'],c:0,
+       e:'Un paso obligado es un punto crítico: nodo de movimiento.'},
+      {t:'¿Qué aporta Fuerte Viejo a la planificación militar?',
+       o:['Nada, es solo histórico','Valor político-simbólico y terreno defensivo',
+          'Solo logística','Es el nodo principal'],c:1,
+       e:'Un símbolo nacional tiene valor político, y su acantilado, valor táctico.'},
+      {t:'Villa Pesquera (5.000 hab.) es un centro poblado pequeño. ¿Verdadero o falso que es irrelevante?',
+       o:['Verdadero','Falso'],c:1,
+       e:'Falso: aporta recursos logísticos (pescado, hielo, talleres).'},
+      {t:'¿Cuál es un punto crítico en Costa del Este?',
+       o:['El puente y compuertas de Cruce Delta','Una playa turística','Un hotel','Un mercado'],c:0,
+       e:'El puente del delta es paso obligado.'},
+      {t:'Monte Alto: 800 hab., altura con vista al puerto. ¿Qué factor destaca?',
+       o:['Terreno (observación y defensa)','Logística','Población','Valor político'],c:0,
+       e:'La altura da observación y ventaja defensiva.'},
+      {t:'¿Qué centro poblado concentra los 5 factores en Costa del Este?',
+       o:['Fuerte Viejo','Villa Pesquera','Metrópolis del Mar','Monte Alto'],c:2,
+       e:'Metrópolis suma nodo, logística, población, terreno y política.'}
+    ],
+    sprint: [
+      {t:'Un poblado pequeño puede ser punto crítico.',o:['Verdadero','Falso'],c:0,e:'Sí: Cruce Delta tiene 2.000 hab. y controla el delta.'},
+      {t:'Un cruce de rutas hace a un poblado nodo de movimiento.',o:['Verdadero','Falso'],c:0,e:'Correcto.'},
+      {t:'¿Cuál NO es factor militar?',o:['Nodo','Logística','Color de casas','Político'],c:2,e:'El color no influye.'},
+      {t:'Combustible, aduana y talleres son…',o:['Logística','Político','Terreno','Ninguno'],c:0,e:'Recursos logísticos.'},
+      {t:'Controlar la población facilita reclutamiento e inteligencia.',o:['Verdadero','Falso'],c:0,e:'Sí.'},
+      {t:'Cruce Delta es clave por…',o:['Paso obligado (punto crítico)','Su valor político','Su tamaño','Ninguno'],c:0,e:'Punto crítico.'},
+      {t:'Un monumento nacional puede tener valor político.',o:['Verdadero','Falso'],c:0,e:'Sí: legitimidad y símbolo.'},
+      {t:'Para asegurar un corredor logístico se controla primero…',
+       o:['Los nodos del corredor','Los monumentos','Playas','Nada'],c:0,e:'Los nodos.'},
+      {t:'Monte Alto vale por…',o:['Terreno y observación','Logística','Político','Nodo'],c:0,e:'Ventaja táctica.'},
+      {t:'Conocer centros poblados sirve para…',
+       o:['Priorizar objetivos y asignar medios','Turismo','Nada','Solo mapas'],c:0,e:'Planificación.'}
+    ]
+  },
+  sierra: {
+    nombre: 'Sierra Central',
+    icono: '⛰️',
+    descripcion: 'Región montañosa con minería y un paso cordillerano estratégico.',
+    mision: 'Asegurar un corredor logístico de 72 horas entre la Base Alpina y Mina Grande.',
+    corredor: ['sncristobal','minagrande','pasocondor'],
+    pps: [
+      {id:'sncristobal',nombre:'San Cristóbal',icon:'⛪',pob:'60.000 hab.',corredor:true,
+        datos:{poblacion:'60.000 habitantes',vias:'Nudo de 3 rutas + aeródromo de montaña',
+          recursos:'Hospital, talleres, agua potable',terreno:'Valle alto, casco urbano compacto',
+          politico:'Capital provincial, obispado, medios'},
+        factores:{nodo:true,logistica:true,poblacion:true,terreno:true,politico:true}},
+      {id:'minagrande',nombre:'Mina Grande',icon:'⛏️',pob:'15.000 hab.',corredor:true,
+        datos:{poblacion:'15.000 habitantes',vias:'Ferrocarril minero + 2 rutas',
+          recursos:'Mina, combustible, talleres, agua',terreno:'Quebrada con casco urbano',
+          politico:'Sindicato y delegación'},
+        factores:{nodo:true,logistica:true,poblacion:true,terreno:false,politico:true}},
+      {id:'pasocondor',nombre:'Paso del Cóndor',icon:'🦅',pob:'1.000 hab.',corredor:true,
+        datos:{poblacion:'1.000 habitantes',vias:'Único paso vehicular entre las dos vertientes',
+          recursos:'Pozo de agua',terreno:'Paso de montaña estrecho, altura 3.500 m',
+          politico:'Sin autoridades relevantes'},
+        factores:{nodo:true,logistica:false,poblacion:false,terreno:true,politico:false}},
+      {id:'rioabajo',nombre:'Río Abajo',icon:'🏞️',pob:'8.000 hab.',corredor:false,
+        datos:{poblacion:'8.000 habitantes',vias:'1 carretera secundaria',
+          recursos:'Agricultura, agua, talleres',terreno:'Valle abierto',
+          politico:'Sin autoridades relevantes'},
+        factores:{nodo:false,logistica:true,poblacion:true,terreno:false,politico:false}},
+      {id:'lagunafria',nombre:'Laguna Fría',icon:'💧',pob:'2.000 hab.',corredor:false,
+        datos:{poblacion:'2.000 habitantes',vias:'Trocha de acceso',
+          recursos:'Reserva de agua de la región',terreno:'Altiplano',
+          politico:'Sin autoridades relevantes'},
+        factores:{nodo:false,logistica:true,poblacion:false,terreno:false,politico:false}},
+      {id:'elreten',nombre:'El Retén',icon:'🛡️',pob:'600 hab.',corredor:false,
+        datos:{poblacion:'600 habitantes',vias:'Camino militar',
+          recursos:'Ninguno',terreno:'Posición elevada, guarnición histórica',
+          politico:'Símbolo militar de la región'},
+        factores:{nodo:false,logistica:false,poblacion:false,terreno:true,politico:true}},
+      {id:'altomirador',nombre:'Alto Mirador',icon:'🔭',pob:'300 hab.',corredor:false,
+        datos:{poblacion:'300 habitantes',vias:'Solo sendero',
+          recursos:'Ninguno',terreno:'Altura dominante, vista a todo el valle',
+          politico:'Sin autoridades relevantes'},
+        factores:{nodo:false,logistica:false,poblacion:false,terreno:true,politico:false}},
+      {id:'puebloviejo',nombre:'Pueblo Viejo',icon:'🏚️',pob:'1.500 hab.',corredor:false,
+        datos:{poblacion:'1.500 habitantes (mayoría ancianos)',vias:'Un camino de tierra',
+          recursos:'Agua de pozo',terreno:'Terreno plano',
+          politico:'Sin autoridades relevantes'},
+        factores:{nodo:false,logistica:false,poblacion:true,terreno:false,politico:false}}
+    ],
+    radar: [
+      {t:'¿Cuál es el NODO principal de la Sierra Central?',
+       o:['San Cristóbal: 3 rutas y aeródromo','Alto Mirador: un sendero',
+          'Pueblo Viejo: camino de tierra','Laguna Fría: trocha'],c:0,
+       e:'San Cristóbal concentra rutas y aeródromo.'},
+      {t:'Mina Grande aporta minerales, combustible y talleres. Factor clave:',
+       o:['Político','Logística y recursos','Solo terreno','Ninguno'],c:1,
+       e:'Es un centro logístico de primer orden.'},
+      {t:'Paso del Cóndor es el único paso vehicular. ¿Qué factor representa?',
+       o:['Nodo/punto crítico','Valor político','Tamaño','Ninguno'],c:0,
+       e:'Paso obligado: punto crítico del terreno.'},
+      {t:'Alto Mirador: 300 hab., altura dominante. Factor clave:',
+       o:['Terreno (observación)','Logística','Población','Político'],c:0,
+       e:'La altura da observación y ventaja defensiva.'},
+      {t:'"Pueblo Viejo es irrelevante por su baja población."',
+       o:['Verdadero','Falso'],c:1,
+       e:'Falso: toda población aporta inteligencia y control de civiles.'},
+      {t:'El Retén tiene guarnición histórica y símbolo militar. Factores:',
+       o:['Terreno y valor político','Solo logística','Solo población','Ninguno'],c:0,
+       e:'Posición elevada + símbolo militar = terreno y político.'},
+      {t:'¿Qué aporta Río Abajo a la operación?',
+       o:['Nada','Agua, agricultura y talleres (logística)','Solo valor político','Solo terreno'],c:1,
+       e:'Recursos logísticos.'},
+      {t:'¿Qué centro poblado concentra los 5 factores en la Sierra?',
+       o:['El Retén','Alto Mirador','San Cristóbal','Pueblo Viejo'],c:2,
+       e:'San Cristóbal suma nodo, logística, población, terreno y política.'}
+    ],
+    sprint: [
+      {t:'Los centros poblados solo importan por su población.',o:['Verdadero','Falso'],c:1,e:'No: cuentan ubicación y recursos.'},
+      {t:'Un cruce de rutas hace nodo de movimiento.',o:['Verdadero','Falso'],c:0,e:'Correcto.'},
+      {t:'¿Cuál NO es factor militar?',o:['Nodo','Logística','Color de casas','Político'],c:2,e:'El color no influye.'},
+      {t:'Mina, combustible y talleres son…',o:['Logística','Político','Terreno','Ninguno'],c:0,e:'Logística.'},
+      {t:'Controlar población facilita reclutamiento e inteligencia.',o:['Verdadero','Falso'],c:0,e:'Sí.'},
+      {t:'Paso del Cóndor es clave por…',o:['Paso obligado','Su valor político','Su tamaño','Ninguno'],c:0,e:'Punto crítico.'},
+      {t:'Un símbolo militar puede tener valor político.',o:['Verdadero','Falso'],c:0,e:'Sí.'},
+      {t:'Para asegurar un corredor, primero se controla…',
+       o:['Los nodos del corredor','Los monumentos','Senderos','Nada'],c:0,e:'Los nodos.'},
+      {t:'Alto Mirador vale por…',o:['Terreno y observación','Logística','Político','Nodo'],c:0,e:'Ventaja táctica.'},
+      {t:'Conocer centros poblados sirve para…',
+       o:['Priorizar objetivos y asignar medios','Turismo','Nada','Solo mapas'],c:0,e:'Planificación.'}
+    ]
+  }
+};
+
+const FACTORES = [
+  {id:'nodo',      nombre:'Nodo de comunicaciones', icon:'🛣️',
+   razon:'Porque allí convergen rutas: quien lo controla, controla el movimiento.'},
+  {id:'logistica', nombre:'Logística y recursos',    icon:'⛽',
+   razon:'Porque aporta agua, combustible, talleres y abastecimiento.'},
+  {id:'poblacion', nombre:'Población',               icon:'👥',
+   razon:'Porque aporta gente: reclutamiento, mano de obra e información (HUMINT).'},
+  {id:'terreno',   nombre:'Terreno urbano',          icon:'🏙️',
+   razon:'Porque su casco urbano sirve para defender, emboscar y controlar puntos críticos.'},
+  {id:'politico',  nombre:'Valor político-estratégico', icon:'🏛️',
+   razon:'Porque alberga autoridades y símbolos: da legitimidad y control.'}
+];
+
+/* ---------- BASE DE DATOS IndexedDB ---------- */
+const DB_NAME = 'OperacionNodoDB';
+const DB_VERSION = 1;
+let db = null;
+
+function openDB(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if(!d.objectStoreNames.contains('resultados')){
+        const store = d.createObjectStore('resultados', { keyPath:'id', autoIncrement:true });
+        store.createIndex('equipo', 'equipo', { unique:false });
+        store.createIndex('escenario', 'escenarioId', { unique:false });
+        store.createIndex('fecha', 'fecha', { unique:false });
+      }
+    };
+    req.onsuccess = e => { db = e.target.result; resolve(db); };
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+function guardarResultado(r){
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('resultados','readwrite');
+    const req = tx.objectStore('resultados').add(r);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function obtenerResultados(){
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('resultados','readonly');
+    const req = tx.objectStore('resultados').getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function borrarResultado(id){
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('resultados','readwrite');
+    const req = tx.objectStore('resultados').delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/* ---------- ESTADO ---------- */
+const state = {
+  equipo:'',
+  scenarioId:null,
+  scenario:null,
+  puntos:{radar:0, intel:0, decision:0, sprint:0},
+  radarIdx:0, sprintIdx:0,
+  dossier:null,
+  intel:{},
+  decision:{pps:[], factores:[]},
+  razonesOrden:[]
+};
+
+const totalPts = () => Object.values(state.puntos).reduce((a,b)=>a+b,0);
+function actualizarHUD(){
+  document.getElementById('hud-equipo').textContent = state.equipo ? 'Equipo: ' + state.equipo : '';
+  document.getElementById('hud-puntos').textContent = totalPts() + ' pts';
+}
+
+/* ---------- SONIDO ---------- */
+let audioCtx = null;
+function sonido(t){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    o.type = 'sine'; o.frequency.value = t === 'ok' ? 880 : 180;
+    g.gain.setValueAtTime(0.06, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.22);
+    o.start(); o.stop(audioCtx.currentTime + 0.22);
+  }catch(e){}
+}
+
+const barajar = arr => arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]);
+
+/* ============================================================
+   PANTALLA 0 — INICIO (equipo + escenario)
+   ============================================================ */
+function pantallaInicio(){
+  actualizarHUD();
+  const escCards = Object.entries(SCENARIOS).map(([id,s]) => `
+    <div class="sc-card" data-sc="${id}">
+      <h3>${s.icono} ${s.nombre}</h3>
+      <p>${s.descripcion}</p>
+    </div>`).join('');
+
+  go(`
+  <section class="card centro">
+    <h1>🎖️ OPERACIÓN NODO</h1>
+    <p class="sub">La batalla por los centros poblados · v2.0</p>
+    <p style="max-width:620px;margin:18px auto;text-align:left">
+      Eres parte de una <b>célula de planificación militar</b>. El comandante necesita saber
+      <b>QUÉ centros poblados asegurar primero y POR QUÉ</b> en tu región asignada.
+    </p>
+    <label for="inp-equipo">Nombre del equipo</label>
+    <input id="inp-equipo" maxlength="24" placeholder="Ej: Equipo Alfa" autocomplete="off">
+    <label>Elige tu escenario o deja que el sistema te asigne uno:</label>
+    <div class="sel-scenario" id="sc-grid">${escCards}</div>
+    <button class="btn sec" id="btn-random">🎲 ASIGNAR ESCENARIO ALEATORIO</button>
+    <button class="btn" id="btn-start">▶ INICIAR MISIÓN</button>
+    <p class="sub" style="margin-top:22px;font-size:14px">
+      🕐 45–70 min · 👥 4–5 por equipo · 📱 Un dispositivo por equipo
+    </p>
+  </section>`);
+
+  let elegido = null;
+  document.querySelectorAll('[data-sc]').forEach(el => {
+    el.onclick = () => {
+      document.querySelectorAll('[data-sc]').forEach(x=>x.classList.remove('on'));
+      el.classList.add('on');
+      elegido = el.dataset.sc;
+    };
+  });
+
+  document.getElementById('btn-random').onclick = () => {
+    const ids = Object.keys(SCENARIOS);
+    elegido = ids[Math.floor(Math.random()*ids.length)];
+    document.querySelectorAll('[data-sc]').forEach(x => {
+      x.classList.toggle('on', x.dataset.sc === elegido);
+    });
+  };
+
+  document.getElementById('btn-start').onclick = () => {
+    const nombre = document.getElementById('inp-equipo').value.trim();
+    if(!nombre){ alert('Escribe el nombre del equipo.'); return; }
+    if(!elegido){ alert('Elige un escenario o usa el botón aleatorio.'); return; }
+    state.equipo = nombre;
+    state.scenarioId = elegido;
+    state.scenario = SCENARIOS[elegido];
+    actualizarHUD();
+    pantallaBriefing();
+  };
+}
+
+/* ============================================================
+   PANTALLA 1 — BRIEFING
+   ============================================================ */
+function pantallaBriefing(){
+  const sc = state.scenario;
+  const mapa = sc.pps.map(p=>`
+    <div class="pp"><span class="ic">${p.icon}</span>
+      <div class="nm">${p.nombre}</div><div class="pb">${p.pob}</div></div>`).join('');
+
+  go(`
+  <section class="card">
+    <div class="barra"><span>FASE 0 · BRIEFING · ${sc.nombre}</span><span>${state.equipo}</span></div>
+    <h2>${sc.icono} ${sc.nombre}</h2>
+    <p>${sc.descripcion}</p>
+    <div class="dossier"><p><b>🎯 Misión:</b> ${sc.mision}</p></div>
+    <p class="inst">Este es el mapa de la región. Estudia los centros poblados:</p>
+    <div class="mapa">${mapa}</div>
+    <div class="dossier">
+      <p><b>Reglas:</b></p>
+      <p>1️⃣ Trabajen en equipo y justifiquen cada decisión.</p>
+      <p>2️⃣ Cada fase entrega puntos de inteligencia (máximo 43).</p>
+      <p>3️⃣ El error no resta: solo enseña.</p>
+    </div>
+    <button class="btn" onclick="pantallaRadar()">COMENZAR FASE 1 ▶</button>
+  </section>`);
+}
+
+/* ============================================================
+   MOTOR DE PREGUNTAS
+   ============================================================ */
+function preguntaUI(p, num, total, alSiguiente){
+  go(`
+  <section class="card">
+    <div class="barra"><span>PREGUNTA ${num} / ${total}</span><span>${state.equipo}</span></div>
+    <h2>${p.t}</h2>
+    <div class="ops" id="ops"></div>
+    <div class="fb" id="fb"></div>
+  </section>`);
+  const ops = document.getElementById('ops');
+  p.o.forEach((o,i)=>{
+    const b = document.createElement('button');
+    b.className = 'op';
+    b.innerHTML = `<span class="letra">${'ABCD'[i]}</span>${o}`;
+    b.onclick = () => responder(i);
+    ops.appendChild(b);
+  });
+  function responder(eleg){
+    [...ops.children].forEach((b,j)=>{
+      b.disabled = true;
+      if(j === p.c) b.classList.add('ok');
+      if(j === eleg && eleg !== p.c) b.classList.add('mal');
+    });
+    const bien = eleg === p.c;
+    sonido(bien ? 'ok' : 'mal');
+    document.getElementById('fb').innerHTML = `
+      <p class="${bien?'bien':'mal2'}">${bien?'✅ ¡Correcto! +1 punto':'❌ Incorrecto. +0 puntos'}</p>
+      <p class="expl">${p.e}</p>
+      <button class="btn" id="sig">CONTINUAR ▶</button>`;
+    document.getElementById('sig').onclick = () => alSiguiente(bien);
+  }
+}
+
+/* ============================================================
+   FASE 1 — RADAR
+   ============================================================ */
+function pantallaRadar(){
+  actualizarHUD();
+  const arr = state.scenario.radar;
+  if(state.radarIdx >= arr.length){ pantallaIntelIntro(); return; }
+  preguntaUI(arr[state.radarIdx], state.radarIdx+1, arr.length, (bien)=>{
+    if(bien) state.puntos.radar++;
+    state.radarIdx++;
+    actualizarHUD();
+    pantallaRadar();
+  });
+}
+
+/* ============================================================
+   FASE 2 — INTELIGENCIA
+   ============================================================ */
+function pantallaIntelIntro(){
+  const pps = state.scenario.pps;
+  const prioritarios = pps.filter(p=>p.corredor);
+  state.dossier = barajar(prioritarios)[0];
+  state.intel = {};
+  state.razonesOrden = barajar(FACTORES.map(f=>({id:f.id, txt:f.razon})));
+
+  go(`
+  <section class="card">
+    <div class="barra"><span>FASE 2 · INTELIGENCIA</span><span>${state.equipo}</span></div>
+    <h2>📂 Dossier recibido</h2>
+    <p>Tu equipo recibió el dossier de <b>${state.dossier.nombre}</b>. Analízalo con los 5 factores.</p>
+    <button class="btn" onclick="pantallaIntel()">ABRIR DOSSIER ▶</button>
+  </section>`);
+}
+
+function pantallaIntel(){
+  const pp = state.dossier, d = pp.datos;
+  const filas = FACTORES.map(f => `
+    <div class="fila" data-fila="${f.id}">
+      <div class="f-nombre">${f.icon} ${f.nombre}</div>
+      <div class="seg">
+        <button class="seg-btn" data-f="${f.id}" data-v="1">SÍ</button>
+        <button class="seg-btn" data-f="${f.id}" data-v="0">NO</button>
+      </div>
+      <select data-sel="${f.id}" disabled>
+        <option value="">— ¿Por qué importa? —</option>
+        ${state.razonesOrden.map(r=>`<option value="${r.id}">${r.txt}</option>`).join('')}
+      </select>
+    </div>`).join('');
+
+  go(`
+  <section class="card">
+    <div class="barra"><span>FASE 2 · INTELIGENCIA</span><span>${state.equipo}</span></div>
+    <h2>${pp.icon} Dossier: ${pp.nombre}</h2>
+    <div class="dossier">
+      <p>👥 <b>Población:</b> ${d.poblacion}</p>
+      <p>🛣️ <b>Vías:</b> ${d.vias}</p>
+      <p>⛽ <b>Recursos:</b> ${d.recursos}</p>
+      <p>🏙️ <b>Terreno:</b> ${d.terreno}</p>
+      <p>🏛️ <b>Político:</b> ${d.politico}</p>
+    </div>
+    <p class="inst">Para cada factor: marca SÍ si está presente y elige POR QUÉ importa (2 pts por factor correcto).</p>
+    <div id="filas">${filas}</div>
+    <button class="btn" id="btn-intel">ENTREGAR ANÁLISIS ▶</button>
+  </section>`);
+
+  document.querySelectorAll('.seg-btn').forEach(b=>{
+    b.onclick = () => {
+      const f = b.dataset.f;
+      const fila = b.closest('.fila');
+      fila.querySelectorAll('.seg-btn').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      const sel = fila.querySelector('select');
+      const valor = b.dataset.v === '1';
+      sel.disabled = !valor;
+      if(!valor) sel.value = '';
+      state.intel[f] = { presente: valor, razon: sel.value };
+    };
+  });
+  document.querySelectorAll('select[data-sel]').forEach(s=>{
+    s.onchange = () => {
+      const f = s.dataset.sel;
+      if(!state.intel[f]) state.intel[f] = { presente:true, razon:'' };
+      state.intel[f].razon = s.value;
+    };
+  });
+  document.getElementById('btn-intel').onclick = corregirIntel;
+}
+
+function corregirIntel(){
+  let pts = 0; const detalle = [];
+  FACTORES.forEach(f=>{
+    const r = state.intel[f.id] || { presente:null, razon:'' };
+    const real = state.dossier.factores[f.id];
+    let p = 0, msg = '';
+    if(r.presente === null){ p = 0; msg = '⭕ Sin responder.'; }
+    else if(r.presente === true){
+      if(real){
+        p = 1;
+        if(r.razon === f.id){ p = 2; msg = '✅ Presente y bien justificado. +2'; }
+        else { msg = '🟡 Presente, justificación incorrecta. +1'; }
+      } else { p = 0; msg = '❌ Ese factor NO está presente. +0'; }
+    } else {
+      if(!real){ p = 2; msg = '✅ Correcto: no está presente. +2'; }
+      else { p = 0; msg = '❌ Sí estaba presente. +0'; }
+    }
+    pts += p;
+    detalle.push({ nombre: f.nombre, icon: f.icon, msg });
+  });
+  state.puntos.intel = pts;
+  actualizarHUD();
+  sonido(pts >= 6 ? 'ok' : 'mal');
+
+  const lista = detalle.map(d=>`
+    <div class="fila"><div class="f-nombre">${d.icon} ${d.nombre}</div>
+      <p class="expl" style="margin:0">${d.msg}</p></div>`).join('');
+
+  go(`
+  <section class="card">
+    <div class="barra"><span>RESULTADO · INTELIGENCIA</span><span>${state.equipo}</span></div>
+    <h2>Análisis entregado: ${pts} / 10 pts</h2>
+    ${lista}
+    <button class="btn" onclick="pantallaDecision()">PASAR A LA DECISIÓN ▶</button>
+  </section>`);
+}
+
+/* ============================================================
+   FASE 3 — DECISIÓN
+   ============================================================ */
+function pantallaDecision(){
+  state.decision = { pps:[], factores:[] };
+  actualizarHUD();
+  const sc = state.scenario;
+  const mapa = sc.pps.map(p=>`
+    <div class="pp clic" data-pp="${p.id}"><span class="ic">${p.icon}</span>
+      <div class="nm">${p.nombre}</div><div class="pb">${p.pob}</div></div>`).join('');
+  const chips = FACTORES.map(f=>`
+    <div class="chip" data-fac="${f.id}">${f.icon} ${f.nombre}</div>`).join('');
+
+  go(`
+  <section class="card">
+    <div class="barra"><span>FASE 3 · DECISIÓN</span><span>${state.equipo}</span></div>
+    <h2>🎯 Escenario táctico</h2>
+    <div class="dossier">
+      <p><b>Misión:</b> ${sc.mision}</p>
+      <p><b>Orden:</b> elige <b>2 centros poblados</b> para controlar primero y cita al menos <b>3 factores</b> que justifiquen tu decisión.</p>
+    </div>
+    <p class="inst">1) Toca los 2 centros poblados que asegurarías primero:</p>
+    <div class="mapa" id="mapa-dec">${mapa}</div>
+    <p class="inst">2) Marca los factores que justifican tu decisión (mínimo 3):</p>
+    <div class="chips" id="chips-dec">${chips}</div>
+    <button class="btn" id="btn-dec">ENTREGAR PLAN ▶</button>
+  </section>`);
+
+  document.querySelectorAll('[data-pp]').forEach(el=>{
+    el.onclick = () => {
+      const id = el.dataset.pp;
+      const i = state.decision.pps.indexOf(id);
+      if(i >= 0){ state.decision.pps.splice(i,1); el.classList.remove('sel'); }
+      else {
+        if(state.decision.pps.length >= 2){ alert('Solo 2 centros poblados.'); return; }
+        state.decision.pps.push(id); el.classList.add('sel');
+      }
+    };
+  });
+  document.querySelectorAll('[data-fac]').forEach(el=>{
+    el.onclick = () => {
+      const id = el.dataset.fac;
+      const i = state.decision.factores.indexOf(id);
+      if(i >= 0){ state.decision.factores.splice(i,1); el.classList.remove('on'); }
+      else { state.decision.factores.push(id); el.classList.add('on'); }
+    };
+  });
+  document.getElementById('btn-dec').onclick = corregirDecision;
+}
+
+function corregirDecision(){
+  const elegidos = state.decision.pps;
+  if(elegidos.length !== 2){ alert('Elige exactamente 2 centros poblados.'); return; }
+  if(state.decision.factores.length < 3){ alert('Marca al menos 3 factores.'); return; }
+
+  let pts = 0; const aciertos = [];
+  elegidos.forEach(id=>{
+    const pp = state.scenario.pps.find(p=>p.id === id);
+    if(pp.corredor){ pts += 5; aciertos.push(`✅ ${pp.nombre}: está en el corredor. +5`); }
+    else { aciertos.push(`❌ ${pp.nombre}: no está en el corredor principal. +0`); }
+  });
+  const validos = state.decision.factores.filter(fid =>
+    elegidos.some(id => state.scenario.pps.find(p=>p.id === id).factores[fid])
+  );
+  const extra = validos.length >= 3 ? 5 : validos.length === 2 ? 3 : validos.length === 1 ? 1 : 0;
+  pts += extra;
+  state.puntos.decision = pts;
+  actualizarHUD();
+  sonido(pts >= 10 ? 'ok' : 'mal');
+  const nombres = validos.map(id => FACTORES.find(f=>f.id===id).nombre).join(', ') || 'ninguno';
+
+  go(`
+  <section class="card">
+    <div class="barra"><span>RESULTADO · DECISIÓN</span><span>${state.equipo}</span></div>
+    <h2>Plan entregado: ${pts} / 15 pts</h2>
+    ${aciertos.map(a=>`<div class="fila"><p class="expl" style="margin:0">${a}</p></div>`).join('')}
+    <div class="fila">
+      <div class="f-nombre">Factores válidos citados: ${validos.length}</div>
+      <p class="expl" style="margin:0">${nombres} → +${extra} pts</p>
+    </div>
+    <div class="dossier" style="margin-top:16px">
+      <p><b>🔑 Corredor óptimo:</b> ${state.scenario.corredor.map(id => state.scenario.pps.find(p=>p.id===id).nombre).join(', ')}</p>
+    </div>
+    <button class="btn" onclick="pantallaSprint()">IR AL SPRINT FINAL ▶</button>
+  </section>`);
+}
+
+/* ============================================================
+   FASE 4 — SPRINT
+   ============================================================ */
+function pantallaSprint(){
+  actualizarHUD();
+  const arr = state.scenario.sprint;
+  if(state.sprintIdx >= arr.length){ pantallaResultados(); return; }
+  preguntaUI(arr[state.sprintIdx], state.sprintIdx+1, arr.length, (bien)=>{
+    if(bien) state.puntos.sprint++;
+    state.sprintIdx++;
+    actualizarHUD();
+    pantallaSprint();
+  });
+}
+
+/* ============================================================
+   FASE 5 — RESULTADOS
+   ============================================================ */
+async function pantallaResultados(){
+  const total = totalPts();
+  const pct = Math.round((total / 43) * 100);
+  let rango = '🎖️ Cadete en formación';
+  if(pct >= 50) rango = '🎖️ Analista de inteligencia';
+  if(pct >= 75) rango = '🎖️ Oficial de planificación';
+  if(pct >= 90) rango = '🏅 Jefe de Estado Mayor';
+
+  const registro = {
+    equipo: state.equipo,
+    escenarioId: state.scenarioId,
+    escenarioNombre: state.scenario.nombre,
+    puntos: { ...state.puntos },
+    total,
+    porcentaje: pct,
+    rango,
+    fecha: new Date().toISOString()
+  };
+
+  try{
+    await openDB();
+    await guardarResultado(registro);
+  }catch(e){ console.error('Error guardando:', e); }
+
+  const todos = await obtenerResultados().catch(()=>[]);
+  const top = [...todos].sort((a,b)=>b.total - a.total).slice(0,8);
+  const filasTop = top.map((s,i)=>`
+    <tr><td>${i+1}</td><td>${s.equipo}</td><td>${s.escenarioNombre}</td><td><b>${s.total}</b></td></tr>`).join('');
+
+  go(`
+  <section class="card">
+    <div class="barra"><span>INFORME FINAL · ${state.scenario.nombre}</span><span>${state.equipo}</span></div>
+    <div class="centro">
+      <div class="grande">${total} / 43</div>
+      <p class="sub">${pct}% de efectividad · ${rango}</p>
+    </div>
+    <h2>Desglose por fase</h2>
+    <div class="fila-res"><span>Fase 1 · Radar</span><b>${state.puntos.radar} / 8</b></div>
+    <div class="fila-res"><span>Fase 2 · Inteligencia</span><b>${state.puntos.intel} / 10</b></div>
+    <div class="fila-res"><span>Fase 3 · Decisión</span><b>${state.puntos.decision} / 15</b></div>
+    <div class="fila-res"><span>Fase 4 · Sprint</span><b>${state.puntos.sprint} / 10</b></div>
+
+    <h2 style="margin-top:28px">🔑 Los 5 factores</h2>
+    ${FACTORES.map(f=>`<div class="fila"><div class="f-nombre">${f.icon} ${f.nombre}</div>
+      <p class="expl" style="margin:0">${f.razon}</p></div>`).join('')}
+
+    <h2 style="margin-top:28px">📝 Ticket de salida</h2>
+    <p class="inst">Nombra 3 razones por las que un centro poblado es importante en geografía militar y da un ejemplo de cada una.</p>
+    <textarea id="ticket" placeholder="1) ...&#10;2) ...&#10;3) ..."></textarea>
+
+    <h2 style="margin-top:28px">🏆 Tabla de posiciones</h2>
+    <table class="tabla">
+      <thead><tr><th>#</th><th>Equipo</th><th>Escenario</th><th>Puntos</th></tr></thead>
+      <tbody>${filasTop || '<tr><td colspan="4">Sin registros aún</td></tr>'}</tbody>
+    </table>
+
+    <div class="no-print" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:24px">
+      <button class="btn sec" onclick="window.print()">🖨️ IMPRIMIR</button>
+      <button class="btn sec" onclick="descargarJSON()">⬇️ EXPORTAR JSON</button>
+      <button class="btn sec" onclick="descargarCSV()">⬇️ EXPORTAR CSV</button>
+      <button class="btn" onclick="reiniciar()">🔄 NUEVO EQUIPO</button>
+    </div>
+    <p class="sub" style="font-size:13px;margin-top:20px">
+      💾 Los resultados quedan guardados localmente. El docente puede consolidarlos desde el panel.
+    </p>
+  </section>`);
+}
+
+function descargarJSON(){
+  obtenerResultados().then(todos => {
+    const blob = new Blob([JSON.stringify(todos, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `operacion-nodo-${state.equipo.replace(/\s+/g,'_')}-${Date.now()}.json`;
+    a.click();
+  });
+}
+
+function descargarCSV(){
+  obtenerResultados().then(todos => {
+    const cab = ['Equipo','Escenario','Radar','Inteligencia','Decision','Sprint','Total','%','Rango','Fecha'];
+    const filas = todos.map(s => [
+      s.equipo, s.escenarioNombre,
+      s.puntos.radar, s.puntos.intel, s.puntos.decision, s.puntos.sprint,
+      s.total, s.porcentaje + '%', s.rango, new Date(s.fecha).toLocaleString()
+    ]);
+    const csv = [cab, ...filas].map(f=>f.join(';')).join('\n');
+    const blob = new Blob(["\ufeff" + csv], {type:'text/csv;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'operacion-nodo-resultados.csv';
+    a.click();
+  });
+}
+
+function reiniciar(){
+  state.equipo = '';
+  state.scenarioId = null;
+  state.scenario = null;
+  state.puntos = {radar:0, intel:0, decision:0, sprint:0};
+  state.radarIdx = 0; state.sprintIdx = 0;
+  state.dossier = null; state.intel = {};
+  state.decision = {pps:[], factores:[]};
+  pantallaInicio();
+}
+
+/* ---------- ARRANQUE ---------- */
+openDB().then(()=>pantallaInicio()).catch(()=>pantallaInicio());
+
+/* ---------- SERVICE WORKER (PWA) ---------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
